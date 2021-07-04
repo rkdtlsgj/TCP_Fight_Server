@@ -1,0 +1,83 @@
+﻿#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "winmm.lib")
+
+#include <wchar.h>
+#include <conio.h>
+#include "Network.h"
+#include "CPacket.h"
+#include "Debug.h"
+
+using namespace std;
+
+
+struct stClient
+{
+	DWORD dwClinetNumber;
+	DWORD dwRoomNumber;
+};
+
+
+bool g_bShutdown;
+
+void ServerControl();
+
+
+int main()
+{
+	timeBeginPeriod(1);
+
+	if (InitServer() == false)
+	{
+		Log(L"Init Error", dfLOG_LEVEL_ERROR);
+		return -1;
+	}
+
+	if (OpenServer() == false)
+	{
+		Log(L"Listen Error", dfLOG_LEVEL_ERROR);
+		return -1;
+	}
+
+
+	while (g_bShutdown == false)
+	{
+		NetWorkProcess();
+		//Update();
+
+		ServerControl();
+	}
+		
+}
+
+
+void ServerControl()
+{
+	static bool bControlMode = false;
+
+	if (_kbhit())
+	{
+		WCHAR ControlKey = _getwch();
+
+		if (L'u' == ControlKey || L'U' == ControlKey)
+		{
+			bControlMode = true;
+
+			wprintf(L"Control Mode - Pres Q - Quit\n");
+			wprintf(L"Control Mode - Pres L - KeyLock\n");
+		}
+
+		if ((L'l' == ControlKey || L'L' == ControlKey) && bControlMode)
+		{
+			bControlMode = false;
+
+			wprintf(L"Control Lock ! Pres U - Control UnLock\n");
+		}
+
+		if ((L'q' == ControlKey || L'Q' == ControlKey) && bControlMode)
+		{
+			g_bShutdown = true;
+		}
+	}
+
+}
+
