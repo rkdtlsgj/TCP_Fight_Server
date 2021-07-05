@@ -26,6 +26,8 @@ struct st_PACKET_HEADER
 	BYTE	byType;			// 패킷타입.
 };
 
+extern std::unordered_map<DWORD, stSession*> g_SessionInfo;
+
 
 stSession* FindSession(DWORD dwSessionID);
 stSession* CreateSession(DWORD dwSessionID,SOCKET socket, SOCKADDR_IN sockaddr);
@@ -49,6 +51,8 @@ bool OpenServer();
 
 void Send_ResCharactor(stSession* pSession, DWORD dwSessionID,BYTE byDir, short shX, short shY,char cHP);
 void MakePacket_Charctor(st_PACKET_HEADER* stHeader, CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
+
+bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket);
 
 
 void SendUnicast(stSession* pSession, st_PACKET_HEADER* pHeader, CPacket* pPakcet);

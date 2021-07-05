@@ -359,6 +359,7 @@ bool PacketProc(stSession* pSession, BYTE byType, CPacket* pPacket)
 	switch (byType)
 	{
 	case dfPACKET_CS_MOVE_START:
+		return Recv_ReqMoveStart(pSession, pPacket);
 		break;
 	case dfPACKET_CS_MOVE_STOP:
 		break;
@@ -373,6 +374,14 @@ bool PacketProc(stSession* pSession, BYTE byType, CPacket* pPacket)
 	}
 
 	return false;
+}
+
+bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket)
+{
+	BYTE byDir;
+	short shX, shY;
+
+	return true;
 }
 
 void SendUnicast(stSession* pSession, st_PACKET_HEADER* pHeader, CPacket* pPakcet)

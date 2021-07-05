@@ -9,5 +9,5 @@ WCHAR g_szLogBuff[1024];
 
 void Log(const WCHAR* szString, int iLogLevel)
 {
-	wprintf(L"%s \n", szString);
+	wprintf(L"%s", szString);
 }
