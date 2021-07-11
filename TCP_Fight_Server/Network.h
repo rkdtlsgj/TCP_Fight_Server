@@ -50,9 +50,14 @@ bool OpenServer();
 
 
 void Send_ResCharactor(stSession* pSession, DWORD dwSessionID,BYTE byDir, short shX, short shY,char cHP);
-void MakePacket_Charctor(st_PACKET_HEADER* stHeader, CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
+void MakePacket_Charctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
 
 bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket);
+void MakePacket_MoveStart(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY);
 
+bool Recv_ReqMoveStop(stSession* pSession, CPacket* pPacket);
+void MakePacket_MoveStop(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY);
 
-void SendUnicast(stSession* pSession, st_PACKET_HEADER* pHeader, CPacket* pPakcet);
+void SendUnicast(stSession* pSession, CPacket* pPakcet);
+void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket,stSession *pSession);
+void SendPacket_Around(stSession* pSession, CPacket* pPacket, bool bSendMe = false);

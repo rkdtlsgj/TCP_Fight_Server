@@ -41,8 +41,8 @@ extern std::list<stClient*> g_sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
 stClient* FindClient(DWORD dwSessionID);
 stClient* CreateClient(DWORD dwSessionID);
 
-
-
+void Update();
+BOOL FrameSkip(int deltaTime);
 
 
 //캐릭터의 현재 좌표로 섹터위치를 계산하여 해당위치 섹터에 넣음
@@ -53,3 +53,9 @@ void Sector_RemoveCharacter(stClient* pClient);
 
 //현재 위치한 섹터에서 삭제 후 현재의 좌표로 섹터를 새롭게 계산하여 섹터에 넣음
 bool Sector_UpdateCharacter(stClient* pClient);
+
+//특정 섹터좌표기준 주번영향권 섹터 가져오기
+void GetSectorAround(int iSectorX, int iSectorY, st_SECOTR_AROUND* pSectorAround);
+
+//섹터에서 섹터를 이동하였을 때 섹터 영향권에서 빠진 섹터, 새로추가된 섹터 정보를 구하는 함수
+void GetUpdateSectorAround(stClient* pClient, st_SECOTR_AROUND* pRemoveSector, st_SECOTR_AROUND* pAddSector);

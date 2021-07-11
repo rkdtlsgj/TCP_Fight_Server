@@ -4,17 +4,11 @@
 #include <wchar.h>
 #include <conio.h>
 #include "Network.h"
+#include "Client.h"
 #include "CPacket.h"
 #include "Debug.h"
 
 using namespace std;
-
-
-struct stClient
-{
-	DWORD dwClinetNumber;
-	DWORD dwRoomNumber;
-};
 
 
 bool g_bShutdown;
