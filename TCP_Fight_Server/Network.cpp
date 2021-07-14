@@ -28,7 +28,7 @@ bool InitServer()
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddr.sin_port = htons(dfNETWORK_PORT);
-	retval = bind(listen_sock, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
+	retval = bind(listen_sock, (SOCKADDR*)& serverAddr, sizeof(serverAddr));
 	if (retval == SOCKET_ERROR)
 		return false;
 
@@ -140,7 +140,7 @@ void SelectSocket(DWORD* dwpUserNumber, SOCKET* pUserSocket, FD_SET* pReadSet, F
 				}
 				else
 				{
-					printf("전송\n");
+					//printf("전송\n");
 					//Recv
 					NetRecv_Proc(dwpUserNumber[i]);
 				}
@@ -159,7 +159,7 @@ void NetAccept_Proc()
 	int addrlen = sizeof(SOCKADDR_IN);
 	SOCKADDR_IN sockaddr;
 
-	SOCKET socket = accept(listen_sock, (SOCKADDR*)&sockaddr, &addrlen);
+	SOCKET socket = accept(listen_sock, (SOCKADDR*)& sockaddr, &addrlen);
 	if (socket == INVALID_SOCKET)
 	{
 		wprintf(L"Accept Error\n");
@@ -173,13 +173,43 @@ void NetAccept_Proc()
 	WCHAR wcAddrs[20];
 	InetNtop(AF_INET, &pSession->sockAddr.sin_addr, wcAddrs, sizeof(wcAddrs));
 
-
 	_LOG(dfLOG_LEVEL_DEBUG, L"[Accept] - %s:%d [UserNo:%d][SocketNo:%d]\n", wcAddrs, ntohs(pSession->sockAddr.sin_port), pSession->dwSeesionID, pSession->socket);
 
 
-	stClient* stClient = CreateClient(pSession->dwSeesionID);
-	g_ClientInfo.insert(std::make_pair(stClient->dwSeesionID, stClient));
-	Send_ResCharactor(pSession, stClient->dwSeesionID, stClient->byDir, stClient->shX, stClient->shY, stClient->cHP);
+	stClient* pClient = CreateClient(pSession->dwSeesionID);
+	g_ClientInfo.insert(std::make_pair(pClient->dwSeesionID, pClient));
+	Sector_AddCharacter(pClient);
+
+	Send_ResCharactor(pSession, pClient->dwSeesionID, pClient->byDir, pClient->shX, pClient->shY, pClient->cHP);
+
+	//주변캐릭터 전송.
+	
+	//CharacterSectorUpdatePacket(pClient);
+
+	st_SECOTR_AROUND stSector;
+	GetSectorAround(pClient->stCurSector.iX, pClient->stCurSector.iY, &stSector);
+
+	CPacket cPacket;
+	stSession* pSessionOther;
+	std::list<stClient*>::iterator sectorIter;
+	for (int i = 0; i < stSector.iCount; i++)
+	{
+		for (sectorIter = g_sector[stSector.stAround[i].iY][stSector.stAround[i].iX].begin(); sectorIter != g_sector[stSector.stAround[i].iY][stSector.stAround[i].iX].end(); ++sectorIter)
+		{
+			if ((*sectorIter)->dwSeesionID != pClient->dwSeesionID)
+			{				
+				MakePacket_OtherCharctor(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byDir, (*sectorIter)->shX, (*sectorIter)->shY, (*sectorIter)->cHP);
+				_LOG(dfLOG_LEVEL_DEBUG, L"MakeOtherCharactor[ID:%d][X:%d][Y:%d][PacketSize:%d]\n", (*sectorIter)->dwSeesionID, (*sectorIter)->shX, (*sectorIter)->shY, cPacket.GetDataSize());
+				SendUnicast(pSession, &cPacket);
+
+		/*		MakePacket_OtherCharctor(&cPacket, pClient->dwSeesionID, pClient->byDir, pClient->shX, pClient->shY, pClient->cHP);
+				pSessionOther = FindSession((*sectorIter)->dwSeesionID);
+				SendUnicast(pSessionOther, &cPacket);*/
+			}
+
+			
+		}
+	}
 }
 
 void NetRecv_Proc(DWORD dwUserNumber)
@@ -265,7 +295,7 @@ int CompleteRecvPacket(stSession* pSession)
 		return 1;
 
 
-	pSession->cRecvQ.Peek((char*)&stHeader, sizeof(st_PACKET_HEADER));
+	pSession->cRecvQ.Peek((char*)& stHeader, sizeof(st_PACKET_HEADER));
 
 
 	if (stHeader.byCode != dfPACKET_CODE)
@@ -327,6 +357,19 @@ stSession* FindSession(DWORD dwSessionID)
 	return sessionIter->second;
 }
 
+bool DeleteSession(DWORD dwSessionID)
+{
+	std::unordered_map < DWORD, stSession*>::iterator sessionIter = g_SessionInfo.find(dwSessionID);
+
+	if (sessionIter == g_SessionInfo.end())
+		return false;;
+
+
+	g_SessionInfo.erase(sessionIter);
+
+	return true;
+}
+
 
 void Send_ResCharactor(stSession* pSession, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP)
 {
@@ -345,7 +388,7 @@ void MakePacket_Charctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short
 	stHeader.byType = dfPACKET_SC_CREATE_MY_CHARACTER;
 	stHeader.bySize = 10;
 
-	cpPacket->PutData((char*)&stHeader, sizeof(stHeader));
+	cpPacket->PutData((char*)& stHeader, sizeof(stHeader));
 
 
 	*cpPacket << dwSessionID;//4
@@ -353,8 +396,38 @@ void MakePacket_Charctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short
 	*cpPacket << shX;//2
 	*cpPacket << shY;//2
 	*cpPacket << cHP;//1
+}
 
+void MakePacket_OtherCharctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP)
+{
+	st_PACKET_HEADER stHeader;
 
+	stHeader.byCode = dfPACKET_CODE;
+	stHeader.byType = dfPACKET_SC_CREATE_OTHER_CHARACTER;
+	stHeader.bySize = 10;
+
+	cpPacket->Clear();
+	cpPacket->PutData((char*)& stHeader, sizeof(stHeader));
+
+	*cpPacket << dwSessionID;//4
+	*cpPacket << byDir;//1
+	*cpPacket << shX;//2
+	*cpPacket << shY;//2
+	*cpPacket << cHP;//1
+}
+
+void MakePacket_DeleteCharacter(CPacket* cpPacket, DWORD dwSessionID)
+{
+	st_PACKET_HEADER stHeader;
+
+	stHeader.byCode = dfPACKET_CODE;
+	stHeader.byType = dfPACKET_SC_DELETE_CHARACTER;
+	stHeader.bySize = 4;
+
+	cpPacket->Clear();
+	cpPacket->PutData((char*)& stHeader, sizeof(stHeader));
+
+	*cpPacket << dwSessionID;//4
 }
 
 bool PacketProc(stSession* pSession, BYTE byType, CPacket* pPacket)
@@ -433,9 +506,9 @@ bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket)
 		pClient->byDir = dfPACKET_MOVE_DIR_LL;
 		break;
 
-	//default:
-	//	_LOG(dfLOG_LEVEL_DEBUG, L"Charactor Move Start SwitchDirError [ID:%d][%d]\n", pSession->dwSeesionID, byDir);
-	//	break;
+		//default:
+		//	_LOG(dfLOG_LEVEL_DEBUG, L"Charactor Move Start SwitchDirError [ID:%d][%d]\n", pSession->dwSeesionID, byDir);
+		//	break;
 	}
 
 	pClient->shX = shX;
@@ -444,6 +517,7 @@ bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket)
 	if (Sector_UpdateCharacter(pClient))
 	{
 		//섹터업데이트패킷.
+		CharacterSectorUpdatePacket(pClient);
 	}
 
 	MakePacket_MoveStart(cpPacket, pSession->dwSeesionID, byDir, pClient->shX, pClient->shY);
@@ -460,7 +534,7 @@ void MakePacket_MoveStart(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, shor
 	stHeader.byType = dfPACKET_CS_MOVE_START;
 	stHeader.bySize = 9;
 
-	cpPacket->PutData((char*)&stHeader, sizeof(stHeader));
+	cpPacket->PutData((char*)& stHeader, sizeof(stHeader));
 
 
 	*cpPacket << dwSessionID;//4
@@ -517,9 +591,9 @@ bool Recv_ReqMoveStop(stSession* pSession, CPacket* pPacket)
 		pClient->byDir = dfPACKET_MOVE_DIR_LL;
 		break;
 
-	//default:
-	//	_LOG(dfLOG_LEVEL_DEBUG, L"Charactor Move Stop SwitchDirError [ID:%d][%d]\n", pSession->dwSeesionID, byDir);
-	//	break;
+		//default:
+		//	_LOG(dfLOG_LEVEL_DEBUG, L"Charactor Move Stop SwitchDirError [ID:%d][%d]\n", pSession->dwSeesionID, byDir);
+		//	break;
 	}
 
 	pClient->shX = shX;
@@ -528,6 +602,7 @@ bool Recv_ReqMoveStop(stSession* pSession, CPacket* pPacket)
 	if (Sector_UpdateCharacter(pClient))
 	{
 		//섹터업데이트패킷.
+		CharacterSectorUpdatePacket(pClient);
 	}
 
 	MakePacket_MoveStop(pPacket, pSession->dwSeesionID, byDir, pClient->shX, pClient->shY);
@@ -545,7 +620,7 @@ void MakePacket_MoveStop(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short
 	stHeader.byType = dfPACKET_CS_MOVE_STOP;
 	stHeader.bySize = 9;
 
-	cpPacket->PutData((char*)&stHeader, sizeof(stHeader));
+	cpPacket->PutData((char*)& stHeader, sizeof(stHeader));
 
 
 	*cpPacket << dwSessionID;//4
@@ -568,7 +643,7 @@ void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket, stSessio
 			continue;
 
 		SendUnicast(FindSession((*sectorIter)->dwSeesionID), pPacket);
-		
+
 	}
 }
 
@@ -590,5 +665,29 @@ void SendPacket_Around(stSession* pSession, CPacket* pPacket, bool bSendMe)
 
 void DisConnect(DWORD dwSessionID)
 {
+	stSession* pSession = FindSession(dwSessionID);
+	stClient* pClient = FindClient(dwSessionID);
+
+	if (pClient == NULL || pSession == NULL)
+	{
+		_LOG(dfLOG_LEVEL_DEBUG, L"DisConnect NULL Data[ID:%d]\n", pSession->dwSeesionID);		
+		return;
+	}
+
+	closesocket(pSession->socket);
+
+	if (DeleteSession(dwSessionID) == true)
+	{
+		delete pSession;
+	}
+
+	if (DeleteClient(dwSessionID) == true)
+	{
+		Sector_RemoveCharacter(pClient);
+		delete pClient;
+	}
+
+
+	_LOG(dfLOG_LEVEL_DEBUG, L"DisConnect Player[ID:%d]\n", dwSessionID);
 
 }

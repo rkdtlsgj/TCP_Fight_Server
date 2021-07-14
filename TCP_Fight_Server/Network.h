@@ -31,6 +31,7 @@ extern std::unordered_map<DWORD, stSession*> g_SessionInfo;
 
 stSession* FindSession(DWORD dwSessionID);
 stSession* CreateSession(DWORD dwSessionID,SOCKET socket, SOCKADDR_IN sockaddr);
+bool DeleteSession(DWORD dwSessionID);
 
 void DisConnect(DWORD dwSessionID);
 
@@ -51,6 +52,11 @@ bool OpenServer();
 
 void Send_ResCharactor(stSession* pSession, DWORD dwSessionID,BYTE byDir, short shX, short shY,char cHP);
 void MakePacket_Charctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
+
+void Send_ResOtherCharactor(stSession* pSession, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
+void MakePacket_OtherCharctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
+
+void MakePacket_DeleteCharacter(CPacket* cpPacket, DWORD dwSessionID);
 
 bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket);
 void MakePacket_MoveStart(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY);

@@ -37,6 +37,7 @@ void CPacket::Clear()
 {
 	m_iWritePos = 0;
 	m_iReadPos = 0;
+	m_iDataSize = 0;
 }
 
 int CPacket::MoveWritePos(int iSize)

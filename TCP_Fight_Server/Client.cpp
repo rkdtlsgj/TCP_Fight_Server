@@ -5,6 +5,8 @@ std::unordered_map<DWORD, stClient*> g_ClientInfo;
 std::list<stClient*> g_sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
 
 
+int TestY = 64;
+
 stClient* CreateClient(DWORD dwSessionID)
 {
 	stClient* pClient = new stClient;
@@ -15,8 +17,12 @@ stClient* CreateClient(DWORD dwSessionID)
 	pClient->byDir = dfACTION_MOVE_RR;
 	pClient->byMoveDir = dfACTION_STAND;
 
-	pClient->shX = rand() % dfMAP_WIDTH;
-	pClient->shY = rand() % dfMAP_HEIGHT;
+	//pClient->shX = rand() % dfMAP_WIDTH;
+	//pClient->shY = rand() % dfMAP_HEIGHT;
+
+	pClient->shX = 64;
+	pClient->shY = TestY += 10;
+
 
 	pClient->stCurSector.iX = pClient->shX / dfSECTOR_SIZE_X;
 	pClient->stCurSector.iY = pClient->shY / dfSECTOR_SIZE_Y;
@@ -38,6 +44,17 @@ stClient* FindClient(DWORD dwSessionID)
 		return NULL;
 
 	return clientIter->second;
+}
+
+bool DeleteClient(DWORD dwSessionID)
+{
+	std::unordered_map < DWORD, stClient*>::iterator clientIter = g_ClientInfo.find(dwSessionID);
+
+	if (clientIter == g_ClientInfo.end())
+		return false;
+
+	g_ClientInfo.erase(clientIter);
+	return true;
 }
 
 int	g_dwUpdateTick;
@@ -78,7 +95,7 @@ void Update()
 			stSession* pSession = FindSession(pClient->dwSeesionID);
 			if (timeGetTime() - pSession->dwLastRecvTime > dfNETWORK_PACKET_RECV_TIMEOUT)
 			{
-				printf("타임아웃\n");
+				//printf("타임아웃\n");
 				//타임아웃!
 				continue;
 			}
@@ -148,27 +165,19 @@ void Update()
 				}
 				break;
 			}
-
-			printf("루프\n");
+			
 			if (pClient->dwAction >= dfACTION_MOVE_LL && pClient->dwAction <= dfACTION_MOVE_LD)
 			{
 				if (Sector_UpdateCharacter(pClient))
 				{
 					//섹터 변경시 클라에게 정보 쏨
-					//CharacterSectorUpdatePacket(pCharacter);
+					CharacterSectorUpdatePacket(pClient);
 				}
 			}
 		}
 	}
 }
 
-BOOL FrameSkip(int deltaTime)
-{
-	if (deltaTime >= 40)
-		return TRUE;
-
-	return FALSE;
-}
 
 
 void Sector_AddCharacter(stClient* pClient)
@@ -212,6 +221,12 @@ void Sector_RemoveCharacter(stClient* pClient)
 
 bool Sector_UpdateCharacter(stClient* pClient)
 {
+	int iNowSectorX = pClient->shX / dfSECTOR_SIZE_X;
+	int iNowSectorY = pClient->shY / dfSECTOR_SIZE_Y;
+
+	if (pClient->stCurSector.iX == iNowSectorX && pClient->stCurSector.iY == iNowSectorY)
+		return false;
+
 	Sector_RemoveCharacter(pClient);
 	Sector_AddCharacter(pClient);
 
@@ -303,4 +318,47 @@ void GetUpdateSectorAround(stClient* pClient, st_SECOTR_AROUND* pRemoveSector, s
 		}
 	}
 
+}
+
+//이전섹터 캐릭터 삭제(남은사람)
+//이전섹터 캐릭터 삭제(나한테)
+//새로운섹터 캐릭터 추가
+//새로운섹터 다른캐릭터 받기
+void CharacterSectorUpdatePacket(stClient* pClient)
+{
+	st_SECOTR_AROUND stRemoveSector;
+	st_SECOTR_AROUND stAddSector;
+	CPacket cPacket;
+
+	GetUpdateSectorAround(pClient, &stRemoveSector, &stAddSector);
+	MakePacket_DeleteCharacter(&cPacket, pClient->dwSeesionID);
+
+	
+	//이전섹터 캐릭터삭제(남아있던사람들)
+	for (int i = 0; i < stRemoveSector.iCount; i++)
+	{
+		SendPacket_SectorOne(stRemoveSector.stAround[i].iX, stRemoveSector.stAround[i].iY, &cPacket,NULL);
+		//여기서 나한테 삭제를 보내면 MakePacket_DeleteCharacter를 여러번 호출해야됨.
+	}	
+
+	//이전섹터 캐릭터삭제(나한테)
+	std::list<stClient*>::iterator sectorIter;	
+	stSession* stSession = FindSession(pClient->dwSeesionID);
+	for (int i = 0; i < stRemoveSector.iCount; i++)
+	{
+		for (sectorIter = g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].begin(); sectorIter != g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].end();)
+		{
+			MakePacket_DeleteCharacter(&cPacket, (*sectorIter)->dwSeesionID);
+			SendUnicast(stSession, &cPacket);
+			++sectorIter;
+		}
+	}
+
+
+	//새로운색터 캐릭터 추가
+	MakePacket_OtherCharctor(&cPacket, pClient->dwSeesionID, pClient->byDir, pClient->shX, pClient->shY, pClient->cHP);
+	for (int i = 0; i < stAddSector.iCount; i++)
+	{
+		SendPacket_SectorOne(stAddSector.stAround[i].iX, stAddSector.stAround[i].iY, &cPacket, NULL);		
+	}
 }
