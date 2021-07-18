@@ -51,8 +51,8 @@
 #define dfERROR_RANGE		50
 
 
-#define dfSECTOR_SIZE_X 64
-#define dfSECTOR_SIZE_Y 64
+#define dfSECTOR_SIZE_X 160
+#define dfSECTOR_SIZE_Y 160
 
 #define dfNETWORK_PACKET_RECV_TIMEOUT 1000000
 

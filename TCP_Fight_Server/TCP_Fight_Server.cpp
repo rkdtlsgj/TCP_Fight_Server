@@ -36,7 +36,7 @@ int main()
 	while (g_bShutdown == false)
 	{
 		NetWorkProcess();
-		//Update();
+		Update();
 
 		ServerControl();
 	}
