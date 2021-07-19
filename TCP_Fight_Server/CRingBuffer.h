@@ -1,6 +1,6 @@
 #pragma once
 
-#define BUF_SIZE 1000
+#define BUF_SIZE 5000
 #include <memory.h>
 #include <Windows.h>
 #include "CPacket.h"

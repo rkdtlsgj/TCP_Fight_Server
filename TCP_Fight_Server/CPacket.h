@@ -8,7 +8,7 @@ public:
 
 	enum en_PACKET
 	{
-		eBUFFER_DEFAULT = 3000
+		eBUFFER_DEFAULT = 5000
 	};
 
 

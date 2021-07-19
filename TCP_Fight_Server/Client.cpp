@@ -18,11 +18,11 @@ stClient* CreateClient(DWORD dwSessionID)
 	pClient->byDir = dfACTION_MOVE_RR;
 	pClient->byMoveDir = dfACTION_STAND;
 
-	//pClient->shX = rand() % dfMAP_WIDTH;
-	//pClient->shY = rand() % dfMAP_HEIGHT;
+	pClient->shX = rand() % dfMAP_WIDTH;
+	pClient->shY = rand() % dfMAP_HEIGHT;
 
-	pClient->shX = 60;
-	pClient->shY = TestY += 20;
+	//pClient->shX = 60;
+	//pClient->shY = TestY += 20;
 
 
 	pClient->stCurSector.iX = pClient->shX / dfSECTOR_SIZE_X;
@@ -58,35 +58,38 @@ bool DeleteClient(DWORD dwSessionID)
 	return true;
 }
 
-int	g_dwUpdateTick;
-int	g_dwOneFrameTick;
-int	g_dwTick;
 
 
+int g_waitTick = 1000 / 50;
+int g_lastTick = timeGetTime();
+int g_nowTick;
 
-int gframe = 0;
+int timeCheck = 0;
+int logicCount = 0;
+int frameCheck = 0;
+
+
 void Update()
 {
-	gframe++;
+	g_nowTick = timeGetTime();
+	logicCount++;
 
-	if (g_dwUpdateTick == 0)
-		g_dwUpdateTick = timeGetTime();
-
-	g_dwOneFrameTick = timeGetTime() - g_dwUpdateTick;
-
-	if ((g_dwOneFrameTick + g_dwTick) < 1000 / 50)
+	if (g_nowTick - timeCheck > 1000)
 	{
+		_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d][Logic:%d]\n", frameCheck,logicCount);
+		//_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d]\n", frameCheck);
+		logicCount = 0;
+		frameCheck = 0;
+		timeCheck = g_nowTick;
+	}
+
+	if (g_nowTick - g_lastTick < g_waitTick)
+	{		
 		return;
 	}
-	else
-	{
-		//_LOG(dfLOG_LEVEL_DEBUG, L"Frame:%d\n", gframe);
-		gframe = 0;
-		
-		g_dwTick += g_dwOneFrameTick - 1000 / 50;
-		g_dwUpdateTick = timeGetTime();
-	}
 
+	frameCheck++;
+	g_lastTick = g_nowTick;	
 
 	stClient* pClient;
 	std::unordered_map<DWORD, stClient*>::iterator clientIter;
@@ -208,7 +211,7 @@ void Sector_AddCharacter(stClient* pClient)
 	g_sector[iSectorY][iSectorX].push_front(pClient);
 	
 	
-	_LOG(dfLOG_LEVEL_ERROR, L"AddSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
+	//_LOG(dfLOG_LEVEL_ERROR, L"AddSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
 
 }
 
@@ -217,7 +220,7 @@ void Sector_RemoveCharacter(stClient* pClient)
 	int iSectorX = pClient->stCurSector.iX;
 	int iSectorY = pClient->stCurSector.iY;
 	
-	_LOG(dfLOG_LEVEL_ERROR, L"RemoveSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
+	//_LOG(dfLOG_LEVEL_ERROR, L"RemoveSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
 
 	std::list<stClient*>::iterator sectorIter;
 	for (sectorIter = g_sector[iSectorY][iSectorX].begin(); sectorIter != g_sector[iSectorY][iSectorX].end();	++sectorIter)
@@ -228,19 +231,10 @@ void Sector_RemoveCharacter(stClient* pClient)
 			break;
 		}	
 	}	
-
-
-	pClient->stOldSector.iX = pClient->stCurSector.iX;
-	pClient->stOldSector.iY = pClient->stCurSector.iY;
-	pClient->stCurSector.iX = -1;
-	pClient->stCurSector.iY = -1;
 }
 
 bool Sector_UpdateCharacter(stClient* pClient)
 {
-	int iBeforeSectorX = pClient->stCurSector.iX;
-	int iBeforeSectorY = pClient->stCurSector.iY;
-
 	int iNowSectorX = pClient->shX / dfSECTOR_SIZE_X;
 	int iNowSectorY = pClient->shY / dfSECTOR_SIZE_Y;
 
@@ -250,31 +244,8 @@ bool Sector_UpdateCharacter(stClient* pClient)
 	Sector_RemoveCharacter(pClient);
 	Sector_AddCharacter(pClient);
 
-	pClient->stOldSector.iX = iBeforeSectorX;
-	pClient->stOldSector.iY = iBeforeSectorY;
-
 	return true;
 }
-
-//bool Sector_UpdateCharacter(stClient* pClient)
-//{
-//	int iBeforeSectorX = pClient->stCurSector.iX;
-//	int iBeforeSectorY = pClient->stCurSector.iY;
-//
-//	int iNewSectorX = pClient->shX / dfSECTOR_SIZE_X;
-//	int iNewSectorY = pClient->shY / dfSECTOR_SIZE_Y;
-//
-//	if (iBeforeSectorX == iNewSectorX && iBeforeSectorY == iNewSectorY)
-//		return false;
-//
-//	Sector_RemoveCharacter(pClient);
-//	Sector_AddCharacter(pClient);
-//
-//	pClient->stOldSector.iX = iBeforeSectorX;
-//	pClient->stOldSector.iY = iBeforeSectorY;
-//
-//	return true;
-//}
 
 
 void GetSectorAround(int iSectorX, int iSectorY, st_SECOTR_AROUND* pSectorAround)
@@ -434,7 +405,7 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 				case dfACTION_MOVE_LU:
 				case dfACTION_MOVE_RU:
 				case dfACTION_MOVE_RR:
-					MakePacket_MoveStart(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byDir, (*sectorIter)->shX, (*sectorIter)->shY);
+					MakePacket_MoveStart(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byMoveDir, (*sectorIter)->shX, (*sectorIter)->shY);
 					stSession = FindSession((*sectorIter)->dwSeesionID);
 					SendPacket_Around(stSession, &cPacket);
 					break;
@@ -443,84 +414,3 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 		}
 	}
 }
-//
-//void CharacterSectorUpdatePacket(stClient* pClient)
-//{
-//	st_SECOTR_AROUND stRemoveSector;
-//	st_SECOTR_AROUND stAddSector;
-//	
-//	std::list<stClient*>::iterator sectorIter;
-//	std::list<stClient*>* pSectorList;
-//
-//	CPacket cPacket;
-//
-//	GetUpdateSectorAround(pClient, &stRemoveSector, &stAddSector);
-//	MakePacket_DeleteCharacter(&cPacket, pClient->dwSeesionID);
-//
-//
-//	//이전섹터 캐릭터삭제(남아있던사람들)
-//	for (int i = 0; i < stRemoveSector.iCount; i++)
-//	{
-//		SendPacket_SectorOne(stRemoveSector.stAround[i].iX, stRemoveSector.stAround[i].iY, &cPacket, NULL);
-//		//여기서 나한테 삭제를 보내면 MakePacket_DeleteCharacter를 여러번 호출해야됨.
-//	}
-//
-//	//이전섹터 캐릭터삭제(나한테)
-//
-//	stSession* stSession = FindSession(pClient->dwSeesionID);
-//	for (int i = 0; i < stRemoveSector.iCount; i++)
-//	{
-//		pSectorList = &g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX];
-//
-//		for (sectorIter = pSectorList->begin(); sectorIter != pSectorList->end();++pSectorList)
-//		{
-//			MakePacket_DeleteCharacter(&cPacket, (*sectorIter)->dwSeesionID);
-//			SendUnicast(stSession, &cPacket);
-//		}
-//	}
-//
-//
-//	//새로운색터 캐릭터 추가(내캐릭터들 다른사람들한테)
-//	MakePacket_OtherCharctor(&cPacket, pClient->dwSeesionID, pClient->byDir, pClient->shX, pClient->shY, pClient->cHP);
-//	for (int i = 0; i < stAddSector.iCount; i++)
-//	{
-//		SendPacket_SectorOne(stAddSector.stAround[i].iX, stAddSector.stAround[i].iY, &cPacket, NULL);
-//	}
-//
-//	MakePacket_MoveStart(&cPacket, pClient->dwSeesionID, pClient->byMoveDir, pClient->shX, pClient->shY);
-//
-//	for (int i = 0; i < stAddSector.iCount; i++)
-//	{
-//		SendPacket_SectorOne(stAddSector.stAround[i].iX, stAddSector.stAround[i].iY, &cPacket, NULL);
-//	}
-//
-//	//새로운섹터 캐릭터 추가(다른사람 캐릭터를 나한테)
-//	for (int i = 0; i < stAddSector.iCount; i++)
-//	{
-//		pSectorList = &g_sector[stAddSector.stAround[i].iY][stAddSector.stAround[i].iX];
-//
-//		for (sectorIter = pSectorList->begin(); sectorIter != pSectorList->end(); ++sectorIter)
-//		{
-//			if ((*sectorIter) != pClient)
-//			{
-//				MakePacket_OtherCharctor(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byDir, (*sectorIter)->shX, (*sectorIter)->shY, (*sectorIter)->cHP);
-//				SendUnicast(stSession, &cPacket);
-//
-//				switch ((*sectorIter)->dwAction)
-//				{
-//				case dfACTION_MOVE_DD:
-//				case dfACTION_MOVE_LD:
-//				case dfACTION_MOVE_LL:
-//				case dfACTION_MOVE_UU:
-//				case dfACTION_MOVE_LU:
-//				case dfACTION_MOVE_RU:
-//				case dfACTION_MOVE_RR:
-//					MakePacket_MoveStart(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byDir, (*sectorIter)->shX, (*sectorIter)->shY);
-//					stSession = FindSession((*sectorIter)->dwSeesionID);
-//					SendPacket_Around(stSession, &cPacket);
-//					break;
-//				}
-//			}
-//		}
-//	}
-//}

@@ -15,7 +15,6 @@ bool g_bShutdown;
 
 void ServerControl();
 
-
 int main()
 {
 	timeBeginPeriod(1);
@@ -67,6 +66,11 @@ void ServerControl()
 			wprintf(L"Control Lock ! Pres U - Control UnLock\n");
 		}
 
+		if ((L'i' == ControlKey || L'I' == ControlKey) && bControlMode)
+		{
+			Test();
+		}
+
 		if ((L'q' == ControlKey || L'Q' == ControlKey) && bControlMode)
 		{
 			g_bShutdown = true;
@@ -74,4 +78,3 @@ void ServerControl()
 	}
 
 }
-

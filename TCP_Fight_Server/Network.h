@@ -91,3 +91,5 @@ bool AttackHit(stClient* pAtkClient, stClient* pOtherClient, short shRangeX, sho
 void SendUnicast(stSession* pSession, CPacket* pPakcet);
 void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket,stSession *pSession);
 void SendPacket_Around(stSession* pSession, CPacket* pPacket, bool bSendMe = false);
+
+void Test();
