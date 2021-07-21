@@ -33,6 +33,9 @@ struct  stClient
 	st_SECTOR_POS stCurSector;
 
 	char cHP;
+
+	//Test
+	//stSession* pSession;
 };
 
 extern std::unordered_map<DWORD, stClient*> g_ClientInfo;
@@ -62,3 +65,7 @@ void GetUpdateSectorAround(stClient* pClient, st_SECOTR_AROUND* pRemoveSector, s
 
 //캐릭터의 섹터이동시 업데이트패킷
 void CharacterSectorUpdatePacket(stClient* pClient);
+
+
+
+void DebugSector();

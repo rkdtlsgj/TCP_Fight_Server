@@ -89,7 +89,5 @@ void MakePacket_Synk(CPacket* cpPacket, DWORD dwSessionID, short shX, short shY)
 bool AttackHit(stClient* pAtkClient, stClient* pOtherClient, short shRangeX, short shRangeY);
 
 void SendUnicast(stSession* pSession, CPacket* pPakcet);
-void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket,stSession *pSession);
+void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket,stSession *pSession,bool test = false);
 void SendPacket_Around(stSession* pSession, CPacket* pPacket, bool bSendMe = false);
-
-void Test();

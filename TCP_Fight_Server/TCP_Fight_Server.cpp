@@ -21,13 +21,13 @@ int main()
 
 	if (InitServer() == false)
 	{
-		Log(L"Init Error", dfLOG_LEVEL_ERROR);
+		_LOG(dfLOG_LEVEL_ERROR, L"Init Error\n");		
 		return -1;
 	}
 
 	if (OpenServer() == false)
 	{
-		Log(L"Listen Error", dfLOG_LEVEL_ERROR);
+		_LOG(dfLOG_LEVEL_ERROR, L"Listen Error\n");		
 		return -1;
 	}
 
@@ -57,6 +57,7 @@ void ServerControl()
 
 			wprintf(L"Control Mode - Pres Q - Quit\n");
 			wprintf(L"Control Mode - Pres L - KeyLock\n");
+			wprintf(L"Control Mode - Pres I - DebugSector\n");
 		}
 
 		if ((L'l' == ControlKey || L'L' == ControlKey) && bControlMode)
@@ -68,7 +69,7 @@ void ServerControl()
 
 		if ((L'i' == ControlKey || L'I' == ControlKey) && bControlMode)
 		{
-			Test();
+			DebugSector();
 		}
 
 		if ((L'q' == ControlKey || L'Q' == ControlKey) && bControlMode)

@@ -21,8 +21,8 @@ stClient* CreateClient(DWORD dwSessionID)
 	pClient->shX = rand() % dfMAP_WIDTH;
 	pClient->shY = rand() % dfMAP_HEIGHT;
 
-	//pClient->shX = 60;
-	//pClient->shY = TestY += 20;
+	//pClient->shX = 0;
+	//pClient->shY = 0;
 
 
 	pClient->stCurSector.iX = pClient->shX / dfSECTOR_SIZE_X;
@@ -60,36 +60,49 @@ bool DeleteClient(DWORD dwSessionID)
 
 
 
-int g_waitTick = 1000 / 50;
-int g_lastTick = timeGetTime();
-int g_nowTick;
+int waitTime = 1000 / 50;
+int lastTime = timeGetTime();
+int nowTime;
+int delayTIme;
 
 int timeCheck = 0;
 int logicCount = 0;
 int frameCheck = 0;
 
+int iAcceptsTPS = 0;
 
 void Update()
 {
-	g_nowTick = timeGetTime();
+	nowTime = timeGetTime();
+	delayTIme = nowTime - lastTime;
 	logicCount++;
 
-	if (g_nowTick - timeCheck > 1000)
+	if (nowTime - timeCheck > 1000)
 	{
-		_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d][Logic:%d]\n", frameCheck,logicCount);
-		//_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d]\n", frameCheck);
+		if (frameCheck != 50)
+		{
+			_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d][Logic:%d][Accept:%d]\n", frameCheck, logicCount, iAcceptsTPS);
+		}
+		else
+		{
+			_LOG(dfLOG_LEVEL_DEBUG, L"[Frame:%d][Logic:%d][Accept:%d]\n", frameCheck,logicCount, iAcceptsTPS);
+		}
+
+
+		iAcceptsTPS = 0;
 		logicCount = 0;
 		frameCheck = 0;
-		timeCheck = g_nowTick;
+		timeCheck = nowTime;
 	}
 
-	if (g_nowTick - g_lastTick < g_waitTick)
+	if (delayTIme < waitTime)
 	{		
 		return;
 	}
 
+	lastTime = nowTime - (delayTIme - waitTime);
 	frameCheck++;
-	g_lastTick = g_nowTick;	
+	
 
 	stClient* pClient;
 	std::unordered_map<DWORD, stClient*>::iterator clientIter;
@@ -97,7 +110,6 @@ void Update()
 	{
 		pClient = clientIter->second;
 		clientIter++;
-
 
 		if (0 >= pClient->cHP)
 		{
@@ -108,9 +120,8 @@ void Update()
 			stSession* pSession = FindSession(pClient->dwSeesionID);
 			if (timeGetTime() - pSession->dwLastRecvTime > dfNETWORK_PACKET_RECV_TIMEOUT)
 			{
-				//printf("타임아웃\n");
 				//타임아웃!
-				_LOG(dfLOG_LEVEL_DEBUG, L"TimeOut\n");
+				_LOG(dfLOG_LEVEL_ERROR, L"TimeOut\n");
 				continue;
 			}
 
@@ -202,14 +213,13 @@ void Sector_AddCharacter(stClient* pClient)
 
 	//_LOG(dfLOG_LEVEL_DEBUG, L"OldSector[X:%d][Y:%d]\n", pClient->stCurSector.iX, pClient->stCurSector.iY);
 
+	g_sector[iSectorY][iSectorX].push_front(pClient);
+
 	pClient->stOldSector.iX  = pClient->stCurSector.iX;
 	pClient->stOldSector.iY = pClient->stCurSector.iY;
 
 	pClient->stCurSector.iX = iSectorX;
-	pClient->stCurSector.iY = iSectorY;
-
-	g_sector[iSectorY][iSectorX].push_front(pClient);
-	
+	pClient->stCurSector.iY = iSectorY;	
 	
 	//_LOG(dfLOG_LEVEL_ERROR, L"AddSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
 
@@ -219,15 +229,13 @@ void Sector_RemoveCharacter(stClient* pClient)
 {
 	int iSectorX = pClient->stCurSector.iX;
 	int iSectorY = pClient->stCurSector.iY;
-	
-	//_LOG(dfLOG_LEVEL_ERROR, L"RemoveSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
 
 	std::list<stClient*>::iterator sectorIter;
 	for (sectorIter = g_sector[iSectorY][iSectorX].begin(); sectorIter != g_sector[iSectorY][iSectorX].end();	++sectorIter)
 	{
 		if (pClient == *sectorIter)
 		{			
-			g_sector[iSectorY][iSectorX].erase(sectorIter);
+			g_sector[iSectorY][iSectorX].erase(sectorIter);			
 			break;
 		}	
 	}	
@@ -235,14 +243,22 @@ void Sector_RemoveCharacter(stClient* pClient)
 
 bool Sector_UpdateCharacter(stClient* pClient)
 {
-	int iNowSectorX = pClient->shX / dfSECTOR_SIZE_X;
-	int iNowSectorY = pClient->shY / dfSECTOR_SIZE_Y;
+	int iNowSectorX = pClient->stCurSector.iX;
+	int iNowSectorY = pClient->stCurSector.iY;
 
-	if (pClient->stCurSector.iX == iNowSectorX && pClient->stCurSector.iY == iNowSectorY)
+	int iNewSectorX = pClient->shX / dfSECTOR_SIZE_X;
+	int iNewSectorY = pClient->shY / dfSECTOR_SIZE_Y;
+
+	if (iNewSectorX == iNowSectorX && iNewSectorY == iNowSectorY)
 		return false;
 
 	Sector_RemoveCharacter(pClient);
 	Sector_AddCharacter(pClient);
+
+	pClient->stCurSector.iX = iNewSectorX;
+	pClient->stCurSector.iY = iNewSectorY;
+	pClient->stOldSector.iX = iNowSectorX;
+	pClient->stOldSector.iY = iNowSectorY;
 
 	return true;
 }
@@ -346,32 +362,34 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 	std::list<stClient*>* pSectorList;
 
 	GetUpdateSectorAround(pClient, &stRemoveSector, &stAddSector);
+
+
 	MakePacket_DeleteCharacter(&cPacket, pClient->dwSeesionID);
 
 	
-	//이전섹터 캐릭터삭제(남아있던사람들)
+	//이전섹터에서 나의 캐릭터삭제
 	for (int i = 0; i < stRemoveSector.iCount; i++)
 	{
-		SendPacket_SectorOne(stRemoveSector.stAround[i].iX, stRemoveSector.stAround[i].iY, &cPacket,NULL);
+		SendPacket_SectorOne(stRemoveSector.stAround[i].iX, stRemoveSector.stAround[i].iY, &cPacket,NULL,true);				
 		//여기서 나한테 삭제를 보내면 MakePacket_DeleteCharacter를 여러번 호출해야됨.
 	}	
 
-	//이전섹터 캐릭터삭제(나한테)
+	//이전섹터에 있는 다른 캐릭터삭제
 	std::list<stClient*>::iterator sectorIter;	
 	stSession* stSession = FindSession(pClient->dwSeesionID);
 	for (int i = 0; i < stRemoveSector.iCount; i++)
 	{
-		for (sectorIter = g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].begin(); sectorIter != g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].end();)
+		for (sectorIter = g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].begin(); sectorIter != g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].end();			++sectorIter)
 		{
 			MakePacket_DeleteCharacter(&cPacket, (*sectorIter)->dwSeesionID);
 			SendUnicast(stSession, &cPacket);
-			++sectorIter;
 		}
 	}
 
 
 	//새로운색터 캐릭터 추가(내캐릭터들 다른사람들한테)
 	MakePacket_OtherCharctor(&cPacket, pClient->dwSeesionID, pClient->byDir, pClient->shX, pClient->shY, pClient->cHP);
+
 	for (int i = 0; i < stAddSector.iCount; i++)
 	{
 		SendPacket_SectorOne(stAddSector.stAround[i].iX, stAddSector.stAround[i].iY, &cPacket, NULL);		
@@ -406,11 +424,28 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 				case dfACTION_MOVE_RU:
 				case dfACTION_MOVE_RR:
 					MakePacket_MoveStart(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byMoveDir, (*sectorIter)->shX, (*sectorIter)->shY);
-					stSession = FindSession((*sectorIter)->dwSeesionID);
-					SendPacket_Around(stSession, &cPacket);
+					//stSession = FindSession((*sectorIter)->dwSeesionID);
+					//SendPacket_Around(stSession, &cPacket);
+					SendUnicast(stSession, &cPacket);
 					break;
 				}
 			}
 		}
 	}
+}
+
+
+void DebugSector()
+{
+	int count = 0;
+	for (int y = 0; y < dfSECTOR_MAX_Y; y++)
+	{
+		for (int x = 0; x < dfSECTOR_MAX_X; x++)
+		{
+			count += g_sector[y][x].size();
+			wprintf(L"%zd ", g_sector[y][x].size());
+		}
+		wprintf(L"\n");		
+	}
+	wprintf(L"%d\n", count);
 }
