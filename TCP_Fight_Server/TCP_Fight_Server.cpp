@@ -1,13 +1,8 @@
 ﻿#pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
 
-#include <wchar.h>
-#include <conio.h>
-#include "Network.h"
-#include "Client.h"
+#include "stdafx.h"
 #include "CPacket.h"
-#include "Debug.h"
-
 using namespace std;
 
 

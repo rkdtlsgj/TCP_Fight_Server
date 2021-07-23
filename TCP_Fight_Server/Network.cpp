@@ -1,8 +1,5 @@
-#include "Network.h"
-#include "Define.h"
-#include "Debug.h"
-#include "PacketDefine.h"
-#include "Client.h"
+
+#include "stdafx.h"
 
 SOCKET listen_sock;
 DWORD g_dwKey_UserNumber = 1;
@@ -204,7 +201,7 @@ void NetAccept_Proc()
 
 
 	stClient* pClient = CreateClient(pSession->dwSeesionID);
-	//pClient->pSession = pSession;
+	pClient->pSession = pSession;
 
 	g_ClientInfo.insert(std::make_pair(pClient->dwSeesionID, pClient));
 	Sector_AddCharacter(pClient);
@@ -274,18 +271,18 @@ void NetRecv_Proc(DWORD dwUserNumber)
 
 void NetSend_Proc(DWORD dwUserNumber)
 {
-	stSession* pClient = FindSession(dwUserNumber);
-	if (pClient == NULL)
+	stSession* pSession = FindSession(dwUserNumber);
+	if (pSession == NULL)
 		return;
 
 
-	int iSendSize = pClient->cSendQ.DirectDequeueSize();
+	int iSendSize = pSession->cSendQ.DirectDequeueSize();
 
 	if (iSendSize <= 0)
 		return;
 
 
-	int iResult = send(pClient->socket, pClient->cSendQ.GetFrontBufferPtr(), iSendSize, 0);
+	int iResult = send(pSession->socket, pSession->cSendQ.GetFrontBufferPtr(), iSendSize, 0);
 	//_LOG(dfLOG_LEVEL_DEBUG, L"Socket Send [UserNo:%d][PacketSize:%d]\n", dwUserNumber, iResult);
 	if (iResult == SOCKET_ERROR)
 	{
@@ -301,7 +298,7 @@ void NetSend_Proc(DWORD dwUserNumber)
 	}
 	else
 	{
-		pClient->cSendQ.MoveFront(iResult);
+		pSession->cSendQ.MoveFront(iResult);
 	}
 
 	return;
@@ -510,7 +507,7 @@ bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket)
 		//教农傈价
 		_LOG(dfLOG_LEVEL_ERROR, L"SynkErrorStart[ID:%d][CX:%d][CY:%d][SX:%d][SY:%d]\n", pClient->dwSeesionID, pClient->shX, pClient->shY, shX, shY);
 		MakePacket_Synk(cpPacket, pClient->dwSeesionID, pClient->shX, pClient->shY);
-		SendPacket_Around(pSession, cpPacket, true);
+		SendPacket_Around(pClient->stCurSector.iX, pClient->stCurSector.iY, pClient->pSession ,cpPacket, true);
 
 		shX = pClient->shX;
 		shY = pClient->shY;
@@ -600,7 +597,7 @@ bool Recv_ReqMoveStop(stSession* pSession, CPacket* pPacket)
 		//教农傈价
 		_LOG(dfLOG_LEVEL_ERROR, L"SynkErrorStop[ID:%d][CX:%d][CY:%d][SX:%d][SY:%d]\n", pClient->dwSeesionID, pClient->shX, pClient->shY, shX, shY);
 		MakePacket_Synk(pPacket, pClient->dwSeesionID, pClient->shX, pClient->shY);
-		SendPacket_Around(pSession, pPacket, true);
+		SendPacket_Around(pClient->stCurSector.iX, pClient->stCurSector.iY, pClient->pSession, pPacket, true);
 
 		shX = pClient->shX;
 		shY = pClient->shY;
@@ -688,7 +685,7 @@ bool Recv_ReqAttack1(stSession* pSession, CPacket* pPacket)
 		//教农傈价
 		_LOG(dfLOG_LEVEL_ERROR, L"SynkErrorAttack1[ID:%d][CX:%d][CY:%d][SX:%d][SY:%d]\n", pClient->dwSeesionID, pClient->shX, pClient->shY, shX, shY);
 		MakePacket_Synk(pPacket, pClient->dwSeesionID, pClient->shX, pClient->shY);
-		SendPacket_Around(pSession, pPacket, true);
+		SendPacket_Around(pClient->stCurSector.iX, pClient->stCurSector.iY, pClient->pSession,pPacket, true);
 
 		shX = pClient->shX;
 		shY = pClient->shY;
@@ -791,7 +788,7 @@ bool Recv_ReqAttack2(stSession* pSession, CPacket* pPacket)
 		//教农傈价
 		_LOG(dfLOG_LEVEL_ERROR, L"SynkErrorAttack2[ID:%d][CX:%d][CY:%d][SX:%d][SY:%d]\n", pClient->dwSeesionID, pClient->shX, pClient->shY, shX, shY);
 		MakePacket_Synk(pPacket, pClient->dwSeesionID, pClient->shX, pClient->shY);
-		SendPacket_Around(pSession, pPacket, true);
+		SendPacket_Around(pClient->stCurSector.iX, pClient->stCurSector.iY, pClient->pSession,pPacket, true);
 
 		shX = pClient->shX;
 		shY = pClient->shY;
@@ -892,7 +889,7 @@ bool Recv_ReqAttack3(stSession* pSession, CPacket* pPacket)
 		//教农傈价
 		_LOG(dfLOG_LEVEL_ERROR, L"SynkErrorAttack3[ID:%d][CX:%d][CY:%d][SX:%d][SY:%d]\n", pClient->dwSeesionID, pClient->shX, pClient->shY, shX, shY);
 		MakePacket_Synk(pPacket, pClient->dwSeesionID, pClient->shX, pClient->shY);
-		SendPacket_Around(pSession, pPacket, true);
+		SendPacket_Around(pClient->stCurSector.iX, pClient->stCurSector.iY, pClient->pSession, pPacket, true);
 
 		shX = pClient->shX;
 		shY = pClient->shY;
@@ -987,38 +984,7 @@ void MakePacket_Damge(CPacket* cpPacket, DWORD dwAttackID, DWORD dwOtherID, char
 	*cpPacket << chOtherHP;//1
 }
 
-bool AttackHit(stClient* pAtkClient, stClient* pOtherClient,short shRangeX, short shRangeY)
-{
-	short shX = pAtkClient->shX - pOtherClient->shX;
-	short shY = pAtkClient->shY - pOtherClient->shY;
 
-	if (pAtkClient->byDir == dfPACKET_MOVE_DIR_LL)
-	{
-		if (shX < 0 || shY < 0)
-		{
-			return false;
-		}
-
-		if (shX < shRangeX && shY < shRangeY)
-		{
-			return true;
-		}
-	}
-	else if (pAtkClient->byDir == dfPACKET_MOVE_DIR_RR)
-	{
-		if (shX > 0 || shY > 0)
-		{
-			return false;
-		}
-
-		if (shX > -shRangeX && shY > -shRangeY)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
 bool Recv_ReqEcho(stSession* pSession, CPacket* pPacket)
 {
 	DWORD time;
@@ -1078,7 +1044,8 @@ void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket, stSessio
 		if (pSession != NULL && (*sectorIter)->dwSeesionID == pSession->dwSeesionID)
 			continue;
 
-		SendUnicast(FindSession((*sectorIter)->dwSeesionID), pPacket);
+		SendUnicast((*sectorIter)->pSession, pPacket);
+		//SendUnicast(FindSession((*sectorIter)->dwSeesionID), pPacket);
 		//SendUnicast((*sectorIter)->pSession, pPacket);
 
 	}
@@ -1092,6 +1059,22 @@ void SendPacket_Around(stSession* pSession, CPacket* pPacket, bool bSendMe)
 
 	st_SECOTR_AROUND stSector;
 	GetSectorAround(pClient->stCurSector.iX, pClient->stCurSector.iY, &stSector);
+
+	for (int i = 0; i < stSector.iCount; i++)
+	{
+		if (!bSendMe)
+		{
+			SendPacket_SectorOne(stSector.stAround[i].iX, stSector.stAround[i].iY, pPacket, pSession);
+		}
+		else
+			SendPacket_SectorOne(stSector.stAround[i].iX, stSector.stAround[i].iY, pPacket, NULL);
+	}
+}
+
+void SendPacket_Around(int iCurX, int iCurY, stSession* pSession,CPacket* pPacket, bool bSendMe)
+{
+	st_SECOTR_AROUND stSector;
+	GetSectorAround(iCurX,iCurY, &stSector);
 
 	for (int i = 0; i < stSector.iCount; i++)
 	{
@@ -1114,7 +1097,7 @@ void DisConnectClient(DWORD dwSessionID)
 
 	if (DeleteClient(dwSessionID) == true)
 	{
-		Send_ResDeleteCharacter(pClient);
+		Send_ResDeleteCharacter(dwSessionID);
 		delete pClient;
 	}
 }
@@ -1142,13 +1125,14 @@ void DisConnect(DWORD dwSessionID)
 
 }
 
-void Send_ResDeleteCharacter(stClient* pClient)
+void Send_ResDeleteCharacter(DWORD dwSessionID)
 {
-	stSession* pSession = FindSession(pClient->dwSeesionID);
+	//stSession* pSession = FindSession(dwSessionID);
+	stClient* pClient = FindClient(dwSessionID);
 
 	CPacket packet;
-	MakePacket_DeleteCharacter(&packet, pSession->dwSeesionID);
-	_LOG(dfLOG_LEVEL_DEBUG, L"Remove Character[ID:%d]\n", pSession->dwSeesionID);
+	MakePacket_DeleteCharacter(&packet, pClient->dwSeesionID);
+	_LOG(dfLOG_LEVEL_DEBUG, L"Remove Character[ID:%d]\n", pClient->dwSeesionID);
 
 	int iSectorX = pClient->shX / dfSECTOR_SIZE_X;
 	int iSectorY = pClient->shY / dfSECTOR_SIZE_Y;
@@ -1158,6 +1142,6 @@ void Send_ResDeleteCharacter(stClient* pClient)
 
 	for (int i = 0; i < stSector.iCount; i++)
 	{
-		SendPacket_SectorOne(stSector.stAround[i].iX, stSector.stAround[i].iY, &packet, pSession);
+		SendPacket_SectorOne(stSector.stAround[i].iX, stSector.stAround[i].iY, &packet, pClient->pSession);
 	}
 }

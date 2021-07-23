@@ -1,11 +1,8 @@
 #pragma once
-#include <Windows.h>
-#include <wchar.h>
-#include <time.h>
-#include <iostream>
-#include "Debug.h"
 
-int g_iLogLevel = dfLOG_LEVEL_DEBUG;
+#include "stdafx.h"
+
+int g_iLogLevel = dfLOG_LEVEL_ERROR;
 
 WCHAR g_szLogFileName[1024];
 WCHAR g_szLogBuff[1024];

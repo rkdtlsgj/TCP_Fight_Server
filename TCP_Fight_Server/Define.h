@@ -1,5 +1,5 @@
 #pragma once
-#define dfNETWORK_PORT 20000
+#define dfNETWORK_PORT 11810
 #define dfNETWORK_PACKET_RECV_TIME 10000
 
 #define dfRANGE_MOVE_TOP	0

@@ -1,8 +1,4 @@
 #pragma once
-
-#include <WinSock2.h>
-#include <Ws2tcpip.h>
-#include <unordered_map>
 #include "Define.h"
 
 struct st_SECTOR_POS
@@ -35,7 +31,7 @@ struct  stClient
 	char cHP;
 
 	//Test
-	//stSession* pSession;
+	stSession* pSession;
 };
 
 extern std::unordered_map<DWORD, stClient*> g_ClientInfo;
@@ -67,5 +63,6 @@ void GetUpdateSectorAround(stClient* pClient, st_SECOTR_AROUND* pRemoveSector, s
 void CharacterSectorUpdatePacket(stClient* pClient);
 
 
+bool AttackHit(stClient* pAtkClient, stClient* pOtherClient, short shRangeX, short shRangeY);
 
 void DebugSector();

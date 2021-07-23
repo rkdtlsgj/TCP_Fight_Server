@@ -1,6 +1,4 @@
-#include "Client.h"
-#include "Network.h"
-#include "Debug.h"
+#include "stdafx.h"
 
 std::unordered_map<DWORD, stClient*> g_ClientInfo;
 std::list<stClient*> g_sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
@@ -85,7 +83,7 @@ void Update()
 		}
 		else
 		{
-			_LOG(dfLOG_LEVEL_DEBUG, L"[Frame:%d][Logic:%d][Accept:%d]\n", frameCheck,logicCount, iAcceptsTPS);
+			_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d][Logic:%d][Accept:%d]\n", frameCheck,logicCount, iAcceptsTPS);
 		}
 
 
@@ -113,17 +111,18 @@ void Update()
 
 		if (0 >= pClient->cHP)
 		{
+			DisConnect(pClient->dwSeesionID);
 			//사망!
 		}
 		else
 		{
-			stSession* pSession = FindSession(pClient->dwSeesionID);
-			if (timeGetTime() - pSession->dwLastRecvTime > dfNETWORK_PACKET_RECV_TIMEOUT)
-			{
-				//타임아웃!
-				_LOG(dfLOG_LEVEL_ERROR, L"TimeOut\n");
-				continue;
-			}
+			//stSession* pSession = FindSession(pClient->dwSeesionID);
+			//if (timeGetTime() - pSession->dwLastRecvTime > dfNETWORK_PACKET_RECV_TIMEOUT)
+			//{
+			//	//타임아웃!
+			//	_LOG(dfLOG_LEVEL_ERROR, L"TimeOut\n");
+			//	continue;
+			//}
 
 			switch (pClient->dwAction)
 			{
@@ -376,13 +375,13 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 
 	//이전섹터에 있는 다른 캐릭터삭제
 	std::list<stClient*>::iterator sectorIter;	
-	stSession* stSession = FindSession(pClient->dwSeesionID);
+	//stSession* stSession = FindSession(pClient->dwSeesionID);
 	for (int i = 0; i < stRemoveSector.iCount; i++)
 	{
 		for (sectorIter = g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].begin(); sectorIter != g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].end();			++sectorIter)
 		{
 			MakePacket_DeleteCharacter(&cPacket, (*sectorIter)->dwSeesionID);
-			SendUnicast(stSession, &cPacket);
+			SendUnicast(pClient->pSession, &cPacket);
 		}
 	}
 
@@ -412,7 +411,7 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 			if ((*sectorIter) != pClient)
 			{
 				MakePacket_OtherCharctor(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byDir, (*sectorIter)->shX, (*sectorIter)->shY, (*sectorIter)->cHP);
-				SendUnicast(stSession, &cPacket);
+				SendUnicast(pClient->pSession, &cPacket);
 
 				switch ((*sectorIter)->dwAction)
 				{
@@ -426,7 +425,7 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 					MakePacket_MoveStart(&cPacket, (*sectorIter)->dwSeesionID, (*sectorIter)->byMoveDir, (*sectorIter)->shX, (*sectorIter)->shY);
 					//stSession = FindSession((*sectorIter)->dwSeesionID);
 					//SendPacket_Around(stSession, &cPacket);
-					SendUnicast(stSession, &cPacket);
+					SendUnicast(pClient->pSession, &cPacket);
 					break;
 				}
 			}
@@ -434,6 +433,38 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 	}
 }
 
+bool AttackHit(stClient* pAtkClient, stClient* pOtherClient, short shRangeX, short shRangeY)
+{
+	short shX = pAtkClient->shX - pOtherClient->shX;
+	short shY = pAtkClient->shY - pOtherClient->shY;
+
+	if (pAtkClient->byDir == dfPACKET_MOVE_DIR_LL)
+	{
+		if (shX < 0 || shY < 0)
+		{
+			return false;
+		}
+
+		if (shX < shRangeX && shY < shRangeY)
+		{
+			return true;
+		}
+	}
+	else if (pAtkClient->byDir == dfPACKET_MOVE_DIR_RR)
+	{
+		if (shX > 0 || shY > 0)
+		{
+			return false;
+		}
+
+		if (shX > -shRangeX && shY > -shRangeY)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 void DebugSector()
 {

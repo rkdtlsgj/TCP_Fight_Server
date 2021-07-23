@@ -1,10 +1,8 @@
 #pragma once
-#include <WinSock2.h>
-#include <Ws2tcpip.h>
-#include <unordered_map>
+
 #include "CPacket.h"
 #include "CRingBuffer.h"
-#include "Client.h"
+
 
 
 struct  stSession
@@ -60,7 +58,7 @@ void Send_ResOtherCharactor(stSession* pSession, DWORD dwSessionID, BYTE byDir, 
 void MakePacket_OtherCharctor(CPacket* cpPacket, DWORD dwSessionID, BYTE byDir, short shX, short shY, char cHP);
 
 
-void Send_ResDeleteCharacter(stClient* pClient);
+void Send_ResDeleteCharacter(DWORD dwSessionID);
 void MakePacket_DeleteCharacter(CPacket* cpPacket, DWORD dwSessionID);
 
 bool Recv_ReqMoveStart(stSession* pSession, CPacket* cpPacket);
@@ -86,8 +84,9 @@ void MakePacket_Echo(CPacket* cpPacket, DWORD dwTime);
 
 void MakePacket_Synk(CPacket* cpPacket, DWORD dwSessionID, short shX, short shY);
 
-bool AttackHit(stClient* pAtkClient, stClient* pOtherClient, short shRangeX, short shRangeY);
 
 void SendUnicast(stSession* pSession, CPacket* pPakcet);
 void SendPacket_SectorOne(int iSectorX, int iSectorY, CPacket* pPacket,stSession *pSession,bool test = false);
 void SendPacket_Around(stSession* pSession, CPacket* pPacket, bool bSendMe = false);
+void SendPacket_Around(int iCurX,int iCurY, stSession* pSession,CPacket* pPacket, bool bSendMe = false);
+
