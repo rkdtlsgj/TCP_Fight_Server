@@ -26,7 +26,6 @@ int main()
 		return -1;
 	}
 
-
 	while (g_bShutdown == false)
 	{
 		NetWorkProcess();

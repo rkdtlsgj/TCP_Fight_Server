@@ -300,7 +300,6 @@ void NetSend_Proc(DWORD dwUserNumber)
 	{
 		pSession->cSendQ.MoveFront(iResult);
 	}
-
 	return;
 }
 
@@ -584,7 +583,7 @@ bool Recv_ReqMoveStop(stSession* pSession, CPacket* pPacket)
 
 	if (pClient == NULL)
 	{
-		//_LOG(dfLOG_LEVEL_DEBUG, L"Charactor Move Stop NotFind[ID:%d]\n", pSession->dwSeesionID);
+		_LOG(dfLOG_LEVEL_ERROR, L"Charactor Move Stop NotFind[ID:%d]\n", pSession->dwSeesionID);
 		return false;
 	}
 
@@ -880,7 +879,7 @@ bool Recv_ReqAttack3(stSession* pSession, CPacket* pPacket)
 
 	if (pClient == NULL)
 	{
-		_LOG(dfLOG_LEVEL_DEBUG, L"Charactor Attack3 NotFind[ID:%d]\n", pSession->dwSeesionID);
+		_LOG(dfLOG_LEVEL_ERROR, L"Charactor Attack3 NotFind[ID:%d]\n", pSession->dwSeesionID);
 		return false;
 	}
 
@@ -1129,6 +1128,12 @@ void Send_ResDeleteCharacter(DWORD dwSessionID)
 {
 	//stSession* pSession = FindSession(dwSessionID);
 	stClient* pClient = FindClient(dwSessionID);
+
+	if (pClient == NULL)
+	{
+		_LOG(dfLOG_LEVEL_ERROR, L"Charactor Delete NotFind[ID:%d]\n", dwSessionID);
+		return;
+	}
 
 	CPacket packet;
 	MakePacket_DeleteCharacter(&packet, pClient->dwSeesionID);
