@@ -1094,9 +1094,10 @@ void DisConnectClient(DWORD dwSessionID)
 		return;
 	}
 
+	Send_ResDeleteCharacter(dwSessionID);
+
 	if (DeleteClient(dwSessionID) == true)
-	{
-		Send_ResDeleteCharacter(dwSessionID);
+	{		
 		delete pClient;
 	}
 }
