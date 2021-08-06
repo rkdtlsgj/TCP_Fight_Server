@@ -1,4 +1,3 @@
-
 #include "stdafx.h"
 
 SOCKET listen_sock;
@@ -32,6 +31,7 @@ bool InitServer()
 	memset(&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	//InetPton(AF_INET, L"192.168.10.118", &serverAddr.sin_addr);
 	serverAddr.sin_port = htons(dfNETWORK_PORT);
 	retval = bind(listen_sock, (SOCKADDR*)& serverAddr, sizeof(serverAddr));
 	if (retval == SOCKET_ERROR)
@@ -1009,6 +1009,7 @@ void MakePacket_Echo(CPacket* cpPacket,DWORD dwTime)
 	cpPacket->PutData((char*)&stHeader, sizeof(stHeader));
 
 	*cpPacket << dwTime;//4
+	//*cpPacket << timeGetTime();//4
 
 }
 
@@ -1121,7 +1122,7 @@ void DisConnect(DWORD dwSessionID)
 	}
 
 
-	_LOG(dfLOG_LEVEL_DEBUG, L"DisConnect Player[ID:%d]\n", dwSessionID);
+	_LOG(dfLOG_LEVEL_ERROR, L"DisConnect Player[ID:%d]\n", dwSessionID);
 
 }
 

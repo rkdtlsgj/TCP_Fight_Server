@@ -2,7 +2,6 @@
 #pragma comment(lib, "winmm.lib")
 
 #include "stdafx.h"
-#include "CPacket.h"
 using namespace std;
 
 

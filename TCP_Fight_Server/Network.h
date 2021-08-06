@@ -4,7 +4,6 @@
 #include "CRingBuffer.h"
 
 
-
 struct  stSession
 {
 	SOCKET socket;

@@ -83,7 +83,7 @@ void Update()
 		}
 		else
 		{
-			_LOG(dfLOG_LEVEL_ERROR, L"[Frame:%d][Logic:%d][Accept:%d]\n", frameCheck,logicCount, iAcceptsTPS);
+			_LOG(dfLOG_LEVEL_DEBUG, L"[Frame:%d][Logic:%d][Accept:%d]\n", frameCheck, logicCount, iAcceptsTPS);
 		}
 
 
@@ -94,13 +94,13 @@ void Update()
 	}
 
 	if (delayTIme < waitTime)
-	{		
+	{
 		return;
 	}
 
 	lastTime = nowTime - (delayTIme - waitTime);
 	frameCheck++;
-	
+
 
 	stClient* pClient;
 	std::unordered_map<DWORD, stClient*>::iterator clientIter;
@@ -111,11 +111,12 @@ void Update()
 
 		if (0 >= pClient->cHP)
 		{
-			DisConnect(pClient->dwSeesionID);
-			//사망!
+			//	DisConnect(pClient->dwSeesionID);
+			//	//사망!
+			pClient->cHP = 100;
 		}
-		else
-		{
+		//else
+		//{
 			//stSession* pSession = FindSession(pClient->dwSeesionID);
 			//if (timeGetTime() - pSession->dwLastRecvTime > dfNETWORK_PACKET_RECV_TIMEOUT)
 			//{
@@ -124,82 +125,82 @@ void Update()
 			//	continue;
 			//}
 
-			switch (pClient->dwAction)
+		switch (pClient->dwAction)
+		{
+		case dfACTION_MOVE_LL:
+			if (pClient->shX - dfSPEED_PLAYER_X > dfRANGE_MOVE_LEFT)
 			{
-			case dfACTION_MOVE_LL:
-				if (pClient->shX - dfSPEED_PLAYER_X > dfRANGE_MOVE_LEFT)
-				{
-					pClient->shX -= dfSPEED_PLAYER_X;
-				}
-				break;
-
-			case dfACTION_MOVE_LU:
-				if ((pClient->shX - dfSPEED_PLAYER_X > dfRANGE_MOVE_LEFT) &&
-					(pClient->shY - dfSPEED_PLAYER_Y > dfRANGE_MOVE_TOP))
-				{
-					pClient->shX -= dfSPEED_PLAYER_X;
-					pClient->shY -= dfSPEED_PLAYER_Y;
-				}
-				break;
-
-			case dfACTION_MOVE_LD:
-				if ((pClient->shX - dfSPEED_PLAYER_X > dfRANGE_MOVE_LEFT) &&
-					(pClient->shY + dfSPEED_PLAYER_Y < dfRANGE_MOVE_BOTTOM))
-				{
-					pClient->shX -= dfSPEED_PLAYER_X;
-					pClient->shY += dfSPEED_PLAYER_Y;
-				}
-				break;
-
-			case dfACTION_MOVE_RR:
-				if (pClient->shX + dfSPEED_PLAYER_X < dfRANGE_MOVE_RIGHT)
-				{
-					pClient->shX += dfSPEED_PLAYER_X;
-				}
-				break;
-
-			case dfACTION_MOVE_RU:
-				if ((pClient->shX + dfSPEED_PLAYER_X < dfRANGE_MOVE_RIGHT) &&
-					(pClient->shY - dfSPEED_PLAYER_Y > dfRANGE_MOVE_TOP))
-				{
-					pClient->shX += dfSPEED_PLAYER_X;
-					pClient->shY -= dfSPEED_PLAYER_Y;
-				}
-				break;
-
-			case dfACTION_MOVE_RD:
-				if ((pClient->shX + dfSPEED_PLAYER_X < dfRANGE_MOVE_RIGHT) &&
-					(pClient->shY + dfSPEED_PLAYER_Y < dfRANGE_MOVE_BOTTOM))
-				{
-					pClient->shX += dfSPEED_PLAYER_X;
-					pClient->shY += dfSPEED_PLAYER_Y;
-				}
-				break;
-
-			case dfACTION_MOVE_UU:
-				if (pClient->shY - dfSPEED_PLAYER_Y > dfRANGE_MOVE_TOP)
-				{
-					pClient->shY -= dfSPEED_PLAYER_Y;
-				}
-				break;
-
-			case dfACTION_MOVE_DD:
-				if (pClient->shY + dfSPEED_PLAYER_Y < dfRANGE_MOVE_BOTTOM)
-				{
-					pClient->shY += dfSPEED_PLAYER_Y;
-				}
-				break;
+				pClient->shX -= dfSPEED_PLAYER_X;
 			}
-			
-			if (pClient->dwAction >= dfACTION_MOVE_LL && pClient->dwAction <= dfACTION_MOVE_LD)
+			break;
+
+		case dfACTION_MOVE_LU:
+			if ((pClient->shX - dfSPEED_PLAYER_X > dfRANGE_MOVE_LEFT) &&
+				(pClient->shY - dfSPEED_PLAYER_Y > dfRANGE_MOVE_TOP))
 			{
-				if (Sector_UpdateCharacter(pClient))
-				{
-					//섹터 변경시 클라에게 정보 쏨
-					CharacterSectorUpdatePacket(pClient);
-				}
+				pClient->shX -= dfSPEED_PLAYER_X;
+				pClient->shY -= dfSPEED_PLAYER_Y;
+			}
+			break;
+
+		case dfACTION_MOVE_LD:
+			if ((pClient->shX - dfSPEED_PLAYER_X > dfRANGE_MOVE_LEFT) &&
+				(pClient->shY + dfSPEED_PLAYER_Y < dfRANGE_MOVE_BOTTOM))
+			{
+				pClient->shX -= dfSPEED_PLAYER_X;
+				pClient->shY += dfSPEED_PLAYER_Y;
+			}
+			break;
+
+		case dfACTION_MOVE_RR:
+			if (pClient->shX + dfSPEED_PLAYER_X < dfRANGE_MOVE_RIGHT)
+			{
+				pClient->shX += dfSPEED_PLAYER_X;
+			}
+			break;
+
+		case dfACTION_MOVE_RU:
+			if ((pClient->shX + dfSPEED_PLAYER_X < dfRANGE_MOVE_RIGHT) &&
+				(pClient->shY - dfSPEED_PLAYER_Y > dfRANGE_MOVE_TOP))
+			{
+				pClient->shX += dfSPEED_PLAYER_X;
+				pClient->shY -= dfSPEED_PLAYER_Y;
+			}
+			break;
+
+		case dfACTION_MOVE_RD:
+			if ((pClient->shX + dfSPEED_PLAYER_X < dfRANGE_MOVE_RIGHT) &&
+				(pClient->shY + dfSPEED_PLAYER_Y < dfRANGE_MOVE_BOTTOM))
+			{
+				pClient->shX += dfSPEED_PLAYER_X;
+				pClient->shY += dfSPEED_PLAYER_Y;
+			}
+			break;
+
+		case dfACTION_MOVE_UU:
+			if (pClient->shY - dfSPEED_PLAYER_Y > dfRANGE_MOVE_TOP)
+			{
+				pClient->shY -= dfSPEED_PLAYER_Y;
+			}
+			break;
+
+		case dfACTION_MOVE_DD:
+			if (pClient->shY + dfSPEED_PLAYER_Y < dfRANGE_MOVE_BOTTOM)
+			{
+				pClient->shY += dfSPEED_PLAYER_Y;
+			}
+			break;
+		}
+
+		if (pClient->dwAction >= dfACTION_MOVE_LL && pClient->dwAction <= dfACTION_MOVE_LD)
+		{
+			if (Sector_UpdateCharacter(pClient))
+			{
+				//섹터 변경시 클라에게 정보 쏨
+				CharacterSectorUpdatePacket(pClient);
 			}
 		}
+
 	}
 }
 
@@ -214,12 +215,12 @@ void Sector_AddCharacter(stClient* pClient)
 
 	g_sector[iSectorY][iSectorX].push_front(pClient);
 
-	pClient->stOldSector.iX  = pClient->stCurSector.iX;
+	pClient->stOldSector.iX = pClient->stCurSector.iX;
 	pClient->stOldSector.iY = pClient->stCurSector.iY;
 
 	pClient->stCurSector.iX = iSectorX;
-	pClient->stCurSector.iY = iSectorY;	
-	
+	pClient->stCurSector.iY = iSectorY;
+
 	//_LOG(dfLOG_LEVEL_ERROR, L"AddSector[X:%d][Y:%d]\n", iSectorX, iSectorY);
 
 }
@@ -230,14 +231,14 @@ void Sector_RemoveCharacter(stClient* pClient)
 	int iSectorY = pClient->stCurSector.iY;
 
 	std::list<stClient*>::iterator sectorIter;
-	for (sectorIter = g_sector[iSectorY][iSectorX].begin(); sectorIter != g_sector[iSectorY][iSectorX].end();	++sectorIter)
+	for (sectorIter = g_sector[iSectorY][iSectorX].begin(); sectorIter != g_sector[iSectorY][iSectorX].end(); ++sectorIter)
 	{
 		if (pClient == *sectorIter)
-		{			
-			g_sector[iSectorY][iSectorX].erase(sectorIter);			
+		{
+			g_sector[iSectorY][iSectorX].erase(sectorIter);
 			break;
-		}	
-	}	
+		}
+	}
 }
 
 bool Sector_UpdateCharacter(stClient* pClient)
@@ -365,20 +366,20 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 
 	MakePacket_DeleteCharacter(&cPacket, pClient->dwSeesionID);
 
-	
+
 	//이전섹터에서 나의 캐릭터삭제
 	for (int i = 0; i < stRemoveSector.iCount; i++)
 	{
-		SendPacket_SectorOne(stRemoveSector.stAround[i].iX, stRemoveSector.stAround[i].iY, &cPacket,NULL,true);				
+		SendPacket_SectorOne(stRemoveSector.stAround[i].iX, stRemoveSector.stAround[i].iY, &cPacket, NULL, true);
 		//여기서 나한테 삭제를 보내면 MakePacket_DeleteCharacter를 여러번 호출해야됨.
-	}	
+	}
 
 	//이전섹터에 있는 다른 캐릭터삭제
-	std::list<stClient*>::iterator sectorIter;	
+	std::list<stClient*>::iterator sectorIter;
 	//stSession* stSession = FindSession(pClient->dwSeesionID);
 	for (int i = 0; i < stRemoveSector.iCount; i++)
 	{
-		for (sectorIter = g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].begin(); sectorIter != g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].end();			++sectorIter)
+		for (sectorIter = g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].begin(); sectorIter != g_sector[stRemoveSector.stAround[i].iY][stRemoveSector.stAround[i].iX].end(); ++sectorIter)
 		{
 			MakePacket_DeleteCharacter(&cPacket, (*sectorIter)->dwSeesionID);
 			SendUnicast(pClient->pSession, &cPacket);
@@ -391,7 +392,7 @@ void CharacterSectorUpdatePacket(stClient* pClient)
 
 	for (int i = 0; i < stAddSector.iCount; i++)
 	{
-		SendPacket_SectorOne(stAddSector.stAround[i].iX, stAddSector.stAround[i].iY, &cPacket, NULL);		
+		SendPacket_SectorOne(stAddSector.stAround[i].iX, stAddSector.stAround[i].iY, &cPacket, NULL);
 	}
 
 	MakePacket_MoveStart(&cPacket, pClient->dwSeesionID, pClient->byMoveDir, pClient->shX, pClient->shY);
@@ -476,7 +477,7 @@ void DebugSector()
 			count += g_sector[y][x].size();
 			wprintf(L"%zd ", g_sector[y][x].size());
 		}
-		wprintf(L"\n");		
+		wprintf(L"\n");
 	}
 	wprintf(L"%d\n", count);
 }

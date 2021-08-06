@@ -1,5 +1,4 @@
 #pragma once
-
 #include "stdafx.h"
 
 int g_iLogLevel = dfLOG_LEVEL_ERROR;
